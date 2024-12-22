@@ -44,7 +44,7 @@ func CalculateHandler(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	writer.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(writer).Encode(map[string]interface{}{
+	err = json.NewEncoder(writer).Encode(map[string]float64{
 		"result": result,
 	})
 	if err != nil {
