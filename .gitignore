@@ -6,6 +6,9 @@
 # JetBrains
 .idea
 
+# Configs
+.configs/**.env
+
 *.exe
 *.exe~
 *.dll
