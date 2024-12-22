@@ -30,4 +30,11 @@ curl --location 'localhost:8080/api/v1/calculate' \
 The server will respond with HTTP 422 to any kind of malformed \ invalid request. 
 Allowed input data for expression is rational numbers (tested on integers and floats), 
 prioritisation operators and basic math operators (+, -, *, /).
-Deviations from allowed input data are considered invalid requests.
+Deviations from allowed input data are considered invalid request, i.e.:
+```shell
+curl --location 'localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json' \
+--data '{
+"expression": "2+2*2+"
+}'
+```
