@@ -3,13 +3,18 @@ package http
 import "net/http"
 
 func NewHTTPServer() (*http.Server, error) {
-	router := http.NewServeMux()
+	mux := http.NewServeMux()
 
-	router.HandleFunc("/api/v1/calculate", CalculateHandler)
+	mux.HandleFunc("/api/v1/calculate", CalculateHandler)
+
+	stack := CreateStackedMiddleware(
+		PanicMiddleware,
+	)
+	handler := stack(mux)
 
 	server := &http.Server{
 		Addr:    ":8080",
-		Handler: router,
+		Handler: handler,
 	}
 
 	return server, nil
