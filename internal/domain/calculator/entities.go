@@ -1,6 +1,7 @@
 package calculator
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -61,6 +62,10 @@ func (t *Token) Div(other Token) (Token, error) {
 
 	if err != nil {
 		return Token{"0.0"}, err
+	}
+
+	if val2 == 0 {
+		return Token{"0.0"}, fmt.Errorf("zero division error")
 	}
 
 	result := val1 / val2
