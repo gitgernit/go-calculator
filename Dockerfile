@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine
+FROM golang:1.23-alpine AS builder
 
 RUN apk --no-cache add ca-certificates gcc g++ libc-dev
 
@@ -11,8 +11,15 @@ RUN go mod download
 COPY . .
 
 COPY ./configs/.env .env
+
 RUN export $(cat .env | xargs) && go build -o backend ./cmd/main
 
-#EXPOSE ${HTTP_SERVER_PORT}
+FROM alpine:3.16
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+COPY --from=builder /app/backend ./backend
 
 CMD ["./backend"]
