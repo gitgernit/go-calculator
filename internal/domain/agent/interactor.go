@@ -12,7 +12,7 @@ import (
 var CalculatorInteractor = calculator.NewCalculatorInteractor()
 
 type Interactor struct {
-	poller ExpressionPoller
+	Poller ExpressionPoller
 	mutex  sync.RWMutex
 }
 
@@ -49,14 +49,18 @@ func (i *Interactor) SolveTasks(context context.Context) error {
 			return context.Err()
 
 		default:
-			task := i.poller.GetNextTask(context)
+			task := i.Poller.GetNextTask(context)
+
+			if task == nil {
+				return fmt.Errorf("invalid task received")
+			}
 
 			result, err := CalculatorInteractor.CalculateTokenized([]calculator.Token{task.Arg1, task.Arg2, task.Operation})
 			if err != nil {
 				return err
 			}
 
-			err = i.poller.SolveTask(task.ID, calculator.Token{Value: fmt.Sprintf("%v%", result)})
+			err = i.Poller.SolveTask(task.ID, calculator.Token{Value: fmt.Sprintf("%v%", result)})
 			if err != nil {
 				return err
 			}
