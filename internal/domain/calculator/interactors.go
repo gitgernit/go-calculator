@@ -72,14 +72,14 @@ func (i *Interactor) validateTokenizedInfixParentheses(infix []Token) error {
 	var stack []Token
 
 	for _, token := range infix {
-		if token.value == "(" {
+		if token.Value == "(" {
 			stack = append(stack, token)
-		} else if token.value == ")" {
+		} else if token.Value == ")" {
 			if len(stack) == 0 {
 				return fmt.Errorf("expected an opening parenthesis")
 			}
 
-			parenthesis := stack[len(stack)-1].value
+			parenthesis := stack[len(stack)-1].Value
 			stack = stack[:len(stack)-1]
 
 			if parenthesis != "(" {
@@ -106,7 +106,7 @@ func (i *Interactor) validateTokenizedInfix(infix []Token) error {
 	}
 
 	for index := range len(infix) {
-		value := infix[index].value
+		value := infix[index].Value
 
 		if slices.Contains(binary, value) {
 			if index == 0 {
@@ -117,8 +117,8 @@ func (i *Interactor) validateTokenizedInfix(infix []Token) error {
 				return fmt.Errorf("expected a second operand for a binary operator (%s)", value)
 			}
 
-			previousValue := infix[index-1].value
-			nextValue := infix[index+1].value
+			previousValue := infix[index-1].Value
+			nextValue := infix[index+1].Value
 
 			if slices.Contains(binary, nextValue) {
 				return fmt.Errorf("expected a number or parentheses after a binary operator, got %s", nextValue)
@@ -129,7 +129,7 @@ func (i *Interactor) validateTokenizedInfix(infix []Token) error {
 			}
 		} else if !slices.Contains(special, value) {
 			if index != 0 {
-				previousValue := infix[index-1].value
+				previousValue := infix[index-1].Value
 
 				if !slices.Contains(binary, previousValue) && !slices.Contains(special, previousValue) {
 					return fmt.Errorf("expected a binary operator or a parenthesis before a number, got %s", previousValue)
@@ -137,7 +137,7 @@ func (i *Interactor) validateTokenizedInfix(infix []Token) error {
 			}
 
 			if index != len(infix)-1 {
-				nextValue := infix[index+1].value
+				nextValue := infix[index+1].Value
 
 				if !slices.Contains(binary, nextValue) && !slices.Contains(special, nextValue) {
 					return fmt.Errorf("expected a binary operator or a parenthesis after a number, got %s", nextValue)
@@ -158,10 +158,10 @@ func (i *Interactor) tokenizedInfixToPolish(infix []Token) []Token {
 	output, stack := make([]Token, 0, len(infix)), make([]Token, 0, len(infix))
 
 	for _, token := range infix {
-		switch token.value {
+		switch token.Value {
 		case "+", "-", "*", "/":
 			for len(stack) > 0 &&
-				priorities[stack[len(stack)-1].value] >= priorities[token.value] {
+				priorities[stack[len(stack)-1].Value] >= priorities[token.Value] {
 				output = append(output, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
 			}
@@ -172,7 +172,7 @@ func (i *Interactor) tokenizedInfixToPolish(infix []Token) []Token {
 			stack = append(stack, token)
 
 		case ")":
-			for stack[len(stack)-1].value != "(" {
+			for stack[len(stack)-1].Value != "(" {
 				output = append(output, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
 			}
@@ -188,7 +188,7 @@ func (i *Interactor) tokenizedInfixToPolish(infix []Token) []Token {
 		token := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 
-		if priorities[token.value] >= 1 {
+		if priorities[token.Value] >= 1 {
 			output = append(output, token)
 		}
 	}
@@ -207,13 +207,13 @@ func (i *Interactor) solveRPN(rpn []Token) (float64, error) {
 		var newToken Token
 		var err error
 
-		if token.value == "+" {
+		if token.Value == "+" {
 			newToken, err = stack[len(stack)-2].Sum(stack[len(stack)-1])
-		} else if token.value == "-" {
+		} else if token.Value == "-" {
 			newToken, err = stack[len(stack)-2].Sub(stack[len(stack)-1])
-		} else if token.value == "*" {
+		} else if token.Value == "*" {
 			newToken, err = stack[len(stack)-2].Mul(stack[len(stack)-1])
-		} else if token.value == "/" {
+		} else if token.Value == "/" {
 			newToken, err = stack[len(stack)-2].Div(stack[len(stack)-1])
 		} else {
 			newToken = token
@@ -230,6 +230,6 @@ func (i *Interactor) solveRPN(rpn []Token) (float64, error) {
 		stack = append(stack, newToken)
 	}
 
-	result, err := strconv.ParseFloat(stack[0].value, 64)
+	result, err := strconv.ParseFloat(stack[0].Value, 64)
 	return result, err
 }

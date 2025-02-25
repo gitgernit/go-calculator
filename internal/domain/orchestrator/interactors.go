@@ -4,13 +4,19 @@ import (
 	"fmt"
 	"github.com/gitgernit/go-calculator/internal/domain/calculator"
 	"github.com/google/uuid"
+	"strconv"
 	"sync"
 )
 
+type Task struct {
+	Expression Expression
+	Blocked    bool
+}
+
 type Interactor struct {
-	Expressions     map[uuid.UUID]Expression
-	ExpressionQueue []Expression
-	mutex           sync.RWMutex
+	Expressions map[uuid.UUID]Expression
+	TaskQueue   []*Task
+	mutex       sync.RWMutex
 }
 
 func (i *Interactor) AddExpression(tokens []calculator.Token) {
@@ -19,8 +25,13 @@ func (i *Interactor) AddExpression(tokens []calculator.Token) {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
+	task := Task{
+		Expression: expression,
+		Blocked:    false,
+	}
+
 	i.Expressions[expression.Id] = expression
-	i.ExpressionQueue = append(i.ExpressionQueue, expression)
+	i.TaskQueue = append(i.TaskQueue, &task)
 }
 
 func (i *Interactor) ListExpressions() []*Expression {
@@ -49,39 +60,70 @@ func (i *Interactor) GetExpression(id uuid.UUID) *Expression {
 	return &expression
 }
 
-func (i *Interactor) GetNextExpression() *Expression {
+func (i *Interactor) GetNextTask() *Task {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	queueLength := len(i.ExpressionQueue)
+	var task *Task
 
-	if queueLength == 0 {
+	for _, t := range i.TaskQueue {
+		if !t.Blocked {
+			task = t
+			break
+		}
+	}
+
+	if task == nil {
 		return nil
 	}
 
-	var expression Expression
-	expression, i.ExpressionQueue = i.ExpressionQueue[queueLength-1], i.ExpressionQueue[:queueLength-1]
+	task.Blocked = true
 
-	expression.Status = Processing
-	i.Expressions[expression.Id] = expression
-
-	return &expression
+	return task
 }
 
-func (i *Interactor) SolveExpression(id uuid.UUID, result float64) error {
+func (i *Interactor) SolveTask(id uuid.UUID, result float64) error {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	expression, ok := i.Expressions[id]
+	var taskIndex int
+	var task *Task
+	found := false
 
-	if !ok {
-		return fmt.Errorf("no such expression found")
+	for index, t := range i.TaskQueue {
+		if t.Expression.Id == id {
+			task = t
+			taskIndex = index
+			found = true
+			break
+		}
 	}
 
-	expression.Status = Done
-	expression.Result = result
+	if !found {
+		return fmt.Errorf("no such task found")
+	}
 
-	i.Expressions[expression.Id] = expression
+	token := calculator.Token{
+		Value: fmt.Sprintf("%v", result),
+	}
+
+	task.Expression.Tokens = task.Expression.Tokens[3:]
+	task.Expression.Tokens = append([]calculator.Token{token}, task.Expression.Tokens...)
+	task.Blocked = false
+
+	if len(task.Expression.Tokens) == 1 {
+		finalResult, err := strconv.ParseFloat(task.Expression.Tokens[0].Value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse final result: %v", err)
+		}
+
+		i.TaskQueue = append(i.TaskQueue[:taskIndex], i.TaskQueue[taskIndex+1:]...)
+
+		expr := i.Expressions[id]
+		expr.Status = Done
+		expr.Result = finalResult
+		i.Expressions[id] = expr
+	}
 
 	return nil
 }

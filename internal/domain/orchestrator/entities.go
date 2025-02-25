@@ -9,7 +9,6 @@ type Status int
 
 const (
 	Accepted Status = iota
-	Processing
 	Done
 )
 

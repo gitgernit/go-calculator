@@ -6,12 +6,12 @@ import (
 )
 
 type Token struct {
-	value string
+	Value string
 }
 
 func (t *Token) BinaryOperation(other Token) (operand1, operand2 float64, err error) {
-	val1, err1 := strconv.ParseFloat(t.value, 64)
-	val2, err2 := strconv.ParseFloat(other.value, 64)
+	val1, err1 := strconv.ParseFloat(t.Value, 64)
+	val2, err2 := strconv.ParseFloat(other.Value, 64)
 
 	if err1 != nil || err2 != nil {
 		if err1 != nil {
