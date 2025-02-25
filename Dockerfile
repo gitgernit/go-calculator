@@ -12,7 +12,7 @@ COPY . .
 
 COPY ./configs/.env .env
 
-RUN export $(cat .env | xargs) && go build -o backend ./cmd/main
+RUN export $(cat .env | xargs) && go build -o backend ./cmd/calc
 
 FROM alpine:3.16
 
