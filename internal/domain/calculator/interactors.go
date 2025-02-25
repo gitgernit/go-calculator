@@ -29,6 +29,17 @@ func (i *Interactor) Calculate(expression string) (float64, error) {
 	return result, nil
 }
 
+func (i *Interactor) CalculateTokenized(expression []Token) (float64, error) {
+	polish := i.tokenizedInfixToPolish(expression)
+	result, err := i.solveRPN(polish)
+
+	if err != nil {
+		return 0.0, err
+	}
+
+	return result, nil
+}
+
 func (i *Interactor) tokenizeInfix(infix string) ([]Token, error) {
 	var result []Token
 	var currString string
