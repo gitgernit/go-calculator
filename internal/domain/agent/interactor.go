@@ -31,14 +31,21 @@ type ExpressionPoller interface {
 }
 
 func (i *Interactor) StartPolling(context context.Context, workers int) error {
+	wg := sync.WaitGroup{}
+
 	for _ = range workers {
+		wg.Add(1)
+
 		go func() {
 			err := i.SolveTasks(context)
 			if err != nil {
 				slog.Error("error while solving expression: %v", err)
 			}
+			wg.Done()
 		}()
 	}
+
+	wg.Wait()
 
 	return nil
 }

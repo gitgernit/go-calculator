@@ -22,7 +22,7 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	err = interactor.SolveTasks(ctx)
+	err = interactor.StartPolling(ctx, config.ComputingPower)
 
 	if err != nil {
 		cancel()
