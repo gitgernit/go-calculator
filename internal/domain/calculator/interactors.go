@@ -13,13 +13,13 @@ func NewCalculatorInteractor() *Interactor {
 }
 
 func (i *Interactor) Calculate(expression string) (float64, error) {
-	tokenized, err := i.tokenizeInfix(expression)
+	tokenized, err := i.TokenizeInfix(expression)
 
 	if err != nil {
 		return 0.0, err
 	}
 
-	polish := i.tokenizedInfixToPolish(tokenized)
+	polish := i.TokenizedInfixToPolish(tokenized)
 	result, err := i.solveRPN(polish)
 
 	if err != nil {
@@ -30,7 +30,7 @@ func (i *Interactor) Calculate(expression string) (float64, error) {
 }
 
 func (i *Interactor) CalculateTokenized(expression []Token) (float64, error) {
-	polish := i.tokenizedInfixToPolish(expression)
+	polish := i.TokenizedInfixToPolish(expression)
 	result, err := i.solveRPN(polish)
 
 	if err != nil {
@@ -40,7 +40,7 @@ func (i *Interactor) CalculateTokenized(expression []Token) (float64, error) {
 	return result, nil
 }
 
-func (i *Interactor) tokenizeInfix(infix string) ([]Token, error) {
+func (i *Interactor) TokenizeInfix(infix string) ([]Token, error) {
 	var result []Token
 	var currString string
 
@@ -98,6 +98,7 @@ func (i *Interactor) validateTokenizedInfixParentheses(infix []Token) error {
 func (i *Interactor) validateTokenizedInfix(infix []Token) error {
 	binary := []string{"+", "-", "*", "/"}
 	special := []string{"(", ")"}
+	digits := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}
 
 	err := i.validateTokenizedInfixParentheses(infix)
 
@@ -107,6 +108,10 @@ func (i *Interactor) validateTokenizedInfix(infix []Token) error {
 
 	for index := range len(infix) {
 		value := infix[index].Value
+
+		if !slices.Contains(digits, value) && !slices.Contains(binary, value) && !slices.Contains(special, value) {
+			return fmt.Errorf("unknown symbol passed")
+		}
 
 		if slices.Contains(binary, value) {
 			if index == 0 {
@@ -149,7 +154,7 @@ func (i *Interactor) validateTokenizedInfix(infix []Token) error {
 	return nil
 }
 
-func (i *Interactor) tokenizedInfixToPolish(infix []Token) []Token {
+func (i *Interactor) TokenizedInfixToPolish(infix []Token) []Token {
 	priorities := map[string]int{
 		"(": 0, ")": 0,
 		"+": 1, "-": 1,

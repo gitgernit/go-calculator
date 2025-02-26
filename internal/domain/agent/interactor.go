@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"log/slog"
 	"sync"
+	"time"
 )
 
 var CalculatorInteractor = calculator.NewCalculatorInteractor()
@@ -55,12 +56,14 @@ func (i *Interactor) SolveTasks(context context.Context) error {
 				return fmt.Errorf("invalid task received")
 			}
 
+			time.Sleep(time.Duration(task.OperationTimeMS) * time.Millisecond)
+
 			result, err := CalculatorInteractor.CalculateTokenized([]calculator.Token{task.Arg1, task.Arg2, task.Operation})
 			if err != nil {
 				return err
 			}
 
-			err = i.Poller.SolveTask(task.ID, calculator.Token{Value: fmt.Sprintf("%v%", result)})
+			err = i.Poller.SolveTask(task.ID, calculator.Token{Value: fmt.Sprintf("%v", result)})
 			if err != nil {
 				return err
 			}

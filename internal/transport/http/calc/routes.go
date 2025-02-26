@@ -2,7 +2,6 @@ package calc
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gitgernit/go-calculator/internal/domain/calculator"
 	"net/http"
 )
@@ -22,7 +21,6 @@ func CalculateHandler(writer http.ResponseWriter, request *http.Request) {
 	var reqBody RequestBody
 	err := json.NewDecoder(request.Body).Decode(&reqBody)
 	if err != nil {
-		fmt.Println(err)
 		writer.WriteHeader(http.StatusUnprocessableEntity)
 		err := json.NewEncoder(writer).Encode(map[string]string{"error": "Expression is not valid"})
 		if err != nil {

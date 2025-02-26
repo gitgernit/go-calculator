@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -86,9 +87,10 @@ func (p *ExpressionPoller) GetNextTask(context context.Context) *agent.Task {
 
 func (p *ExpressionPoller) SolveTask(id uuid.UUID, result calculator.Token) error {
 	url := fmt.Sprintf("http://%s:%d/internal/task", p.Config.OrchestratorHost, p.Config.OrchestratorPort)
+	resultFloat, _ := strconv.ParseFloat(result.Value, 64)
 	payload := map[string]interface{}{
 		"id":     id,
-		"result": result.Value,
+		"result": resultFloat,
 	}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
