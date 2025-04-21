@@ -14,6 +14,7 @@ type Config struct {
 	OrchestratorPort      int    `env:"ORCHESTRATOR_PORT" env-default:"8080"`
 	OrchestratorHost      string `env:"ORCHESTRATOR_HOST" env-default:"0.0.0.0"`
 	PollingIntervalMS     int    `env:"POLLING_INTERVAL" env-default:"250"`
+	JWTSecretKey          string `env:"JWT_SECRET_KEY" env-default:"supersecret"`
 }
 
 func New() (*Config, error) {

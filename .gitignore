@@ -9,6 +9,8 @@
 # Configs
 .configs/**.env
 
+*.db
+
 *.exe
 *.exe~
 *.dll
