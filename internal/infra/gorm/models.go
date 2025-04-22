@@ -1,17 +1,17 @@
 package gorm
 
 import (
-	"github.com/gitgernit/go-calculator/internal/domain/auth"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
-	auth.User
+	Login    string
+	Password string
 }
 
-var Db, _ = gorm.Open(sqlite.Open("calculator.Db"), &gorm.Config{})
+var Db, _ = gorm.Open(sqlite.Open("calculator.db"), &gorm.Config{})
 
 func Initialize() error {
 	err := Db.AutoMigrate(&User{})

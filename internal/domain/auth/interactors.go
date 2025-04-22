@@ -25,10 +25,8 @@ func (i *UserInteractor) Create(login, password string) error {
 	}
 
 	user := db.User{
-		User: User{
-			Login:    login,
-			Password: string(hashedPassword),
-		},
+		Login:    login,
+		Password: string(hashedPassword),
 	}
 
 	if err := db.Db.Create(&user).Error; err != nil {
