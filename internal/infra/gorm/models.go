@@ -22,7 +22,7 @@ type Expression struct {
 	ID     uuid.UUID `gorm:"type:uuid;primaryKey"`
 	Owner  string    `gorm:"not null"`
 	Status Status    `gorm:"not null"`
-	Tokens []string  `gorm:"type:jsonb;not null"`
+	Tokens []string  `gorm:"type:jsonb;not null;serializer:json"`
 	Result float64   `gorm:"not null"`
 }
 

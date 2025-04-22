@@ -31,7 +31,7 @@ func NewOrchestratorInteractor() *Interactor {
 
 func (i *Interactor) AddExpression(owner string, tokens []calculator.Token) uuid.UUID {
 	expression := NewExpression(owner, tokens)
-	db.Db.Create(db.Expression{
+	db.Db.Create(&db.Expression{
 		ID:     expression.Id,
 		Owner:  expression.Owner,
 		Status: db.Status(expression.Status),

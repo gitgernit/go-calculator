@@ -235,6 +235,78 @@ func (s *Server) SolveTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Login    string `json:"login"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Login == "" || req.Password == "" {
+		http.Error(w, "Login and password are required", http.StatusBadRequest)
+		return
+	}
+
+	err := AuthInteractor.Create(req.Login, req.Password)
+	if err != nil {
+		if err.Error() == "user already exists" {
+			http.Error(w, err.Error(), http.StatusConflict)
+		} else {
+			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"status": "user created"})
+}
+
+func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Login    string `json:"login"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Login == "" || req.Password == "" {
+		http.Error(w, "Login and password are required", http.StatusBadRequest)
+		return
+	}
+
+	token, err := AuthInteractor.Authorize(req.Login, req.Password)
+	if err != nil {
+		if err.Error() == "user not found" {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else if err.Error() == "invalid password" {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+		} else {
+			http.Error(w, "Failed to authorize", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
 
 func NewHTTPServer(interactor *orchestrator.Interactor, host string, port string) *http.Server {
 	srv := &Server{Interactor: interactor}
@@ -243,6 +315,8 @@ func NewHTTPServer(interactor *orchestrator.Interactor, host string, port string
 	mux.HandleFunc("/api/v1/calculate", srv.AddExpressionHandler)
 	mux.HandleFunc("/api/v1/expressions", srv.ListExpressionsHandler)
 	mux.HandleFunc("/api/v1/expressions/", srv.GetExpressionHandler)
+	mux.HandleFunc("/api/v1/register", srv.RegisterHandler)
+	mux.HandleFunc("/api/v1/login", srv.LoginHandler)
 	mux.HandleFunc("/internal/task", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
