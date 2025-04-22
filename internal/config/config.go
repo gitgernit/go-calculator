@@ -12,6 +12,7 @@ type Config struct {
 	TimeDivisionsMS       int    `env:"TIME_DIVISIONS_MS" env-default:"100"`
 	ComputingPower        int    `env:"COMPUTING_POWER" env-default:"4"`
 	OrchestratorPort      int    `env:"ORCHESTRATOR_PORT" env-default:"8080"`
+	OrchestratorGRPCPort  int    `env:"ORCHESTRATOR_GRPC_PORT" env-defualt:"8081"`
 	OrchestratorHost      string `env:"ORCHESTRATOR_HOST" env-default:"0.0.0.0"`
 	PollingIntervalMS     int    `env:"POLLING_INTERVAL" env-default:"250"`
 	JWTSecretKey          string `env:"JWT_SECRET_KEY" env-default:"supersecret"`

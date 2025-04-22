@@ -235,6 +235,7 @@ func (s *Server) SolveTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
 func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -317,18 +318,18 @@ func NewHTTPServer(interactor *orchestrator.Interactor, host string, port string
 	mux.HandleFunc("/api/v1/expressions/", srv.GetExpressionHandler)
 	mux.HandleFunc("/api/v1/register", srv.RegisterHandler)
 	mux.HandleFunc("/api/v1/login", srv.LoginHandler)
-	mux.HandleFunc("/internal/task", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			srv.GetTaskHandler(w, r)
-
-		case http.MethodPost:
-			srv.SolveTaskHandler(w, r)
-
-		default:
-			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	//mux.HandleFunc("/internal/task", func(w http.ResponseWriter, r *http.Request) {
+	//	switch r.Method {
+	//	case http.MethodGet:
+	//		srv.GetTaskHandler(w, r)
+	//
+	//	case http.MethodPost:
+	//		srv.SolveTaskHandler(w, r)
+	//
+	//	default:
+	//		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	//	}
+	//})
 
 	return &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", host, port),
