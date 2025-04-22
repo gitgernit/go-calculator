@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"fmt"
 	"github.com/gitgernit/go-calculator/internal/domain/calculator"
+	db "github.com/gitgernit/go-calculator/internal/infra/gorm"
 	"github.com/google/uuid"
 	"slices"
 	"strconv"
@@ -18,20 +19,25 @@ type Task struct {
 }
 
 type Interactor struct {
-	Expressions map[uuid.UUID]Expression
-	TaskQueue   []*Task
-	mutex       sync.RWMutex
+	TaskQueue []*Task
+	mutex     sync.RWMutex
 }
 
 func NewOrchestratorInteractor() *Interactor {
 	return &Interactor{
-		Expressions: make(map[uuid.UUID]Expression, 0),
-		TaskQueue:   make([]*Task, 0),
+		TaskQueue: make([]*Task, 0),
 	}
 }
 
-func (i *Interactor) AddExpression(tokens []calculator.Token) uuid.UUID {
-	expression := NewExpression(tokens)
+func (i *Interactor) AddExpression(owner string, tokens []calculator.Token) uuid.UUID {
+	expression := NewExpression(owner, tokens)
+	db.Db.Create(db.Expression{
+		ID:     expression.Id,
+		Owner:  expression.Owner,
+		Status: db.Status(expression.Status),
+		Tokens: toStringSlice(expression.Tokens),
+		Result: expression.Result,
+	})
 
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
@@ -42,36 +48,44 @@ func (i *Interactor) AddExpression(tokens []calculator.Token) uuid.UUID {
 		RPN:        CalculatorInteractor.TokenizedInfixToPolish(tokens),
 	}
 
-	i.Expressions[expression.Id] = expression
 	i.TaskQueue = append(i.TaskQueue, &task)
 
 	return expression.Id
 }
 
-func (i *Interactor) ListExpressions() []*Expression {
-	expressions := make([]*Expression, 0, len(i.Expressions))
-
-	i.mutex.RLock()
-	defer i.mutex.RUnlock()
-
-	for _, v := range i.Expressions {
-		expressions = append(expressions, &v)
+func (i *Interactor) ListExpressions(owner string) ([]*Expression, error) {
+	var dbExpressions []db.Expression
+	if err := db.Db.Where("owner = ?", owner).Find(&dbExpressions).Error; err != nil {
+		return nil, err
 	}
 
-	return expressions
+	expressions := make([]*Expression, len(dbExpressions))
+	for idx, e := range dbExpressions {
+		expressions[idx] = &Expression{
+			Id:     e.ID,
+			Owner:  e.Owner,
+			Status: Status(e.Status),
+			Tokens: toTokenSlice(e.Tokens),
+			Result: e.Result,
+		}
+	}
+
+	return expressions, nil
 }
 
 func (i *Interactor) GetExpression(id uuid.UUID) *Expression {
-	i.mutex.RLock()
-	defer i.mutex.RUnlock()
-
-	expression, ok := i.Expressions[id]
-
-	if !ok {
+	var e db.Expression
+	if err := db.Db.First(&e, "id = ?", id).Error; err != nil {
 		return nil
 	}
 
-	return &expression
+	return &Expression{
+		Id:     e.ID,
+		Owner:  e.Owner,
+		Status: Status(e.Status),
+		Tokens: toTokenSlice(e.Tokens),
+		Result: e.Result,
+	}
 }
 
 func (i *Interactor) GetNextTask() *Task {
@@ -138,10 +152,17 @@ func (i *Interactor) SolveTask(id uuid.UUID, result float64) error {
 
 		i.TaskQueue = append(i.TaskQueue[:taskIndex], i.TaskQueue[taskIndex+1:]...)
 
-		expr := i.Expressions[id]
-		expr.Status = Done
+		var expr db.Expression
+		if err := db.Db.First(&expr, "id = ?", id).Error; err != nil {
+			return fmt.Errorf("failed to find expression: %v", err)
+		}
+
+		expr.Status = db.Done
 		expr.Result = finalResult
-		i.Expressions[id] = expr
+
+		if err := db.Db.Save(&expr).Error; err != nil {
+			return fmt.Errorf("failed to update expression: %v", err)
+		}
 	}
 
 	return nil
@@ -173,4 +194,20 @@ func (t *Task) NextStep() (arg1Index, arg2Index, operationIndex int, arg1, arg2,
 	}
 
 	return -1, -1, -1, "", "", "", false
+}
+
+func toStringSlice(tokens []calculator.Token) []string {
+	strs := make([]string, len(tokens))
+	for i, t := range tokens {
+		strs[i] = t.Value
+	}
+	return strs
+}
+
+func toTokenSlice(values []string) []calculator.Token {
+	strs := make([]calculator.Token, len(values))
+	for i, t := range values {
+		strs[i] = calculator.Token{Value: t}
+	}
+	return strs
 }

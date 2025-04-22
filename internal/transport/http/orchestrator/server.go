@@ -4,15 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gitgernit/go-calculator/internal/config"
+	"github.com/gitgernit/go-calculator/internal/domain/auth"
 	"github.com/gitgernit/go-calculator/internal/domain/calculator"
 	"github.com/gitgernit/go-calculator/internal/domain/orchestrator"
 	"github.com/google/uuid"
 	"net/http"
+	"strings"
 	"sync"
 )
 
 var CalculatorInteractor = calculator.NewCalculatorInteractor()
 var Config, _ = config.New()
+var AuthInteractor = auth.UserInteractor{JWTSecretKey: Config.JWTSecretKey}
 
 type Server struct {
 	Interactor *orchestrator.Interactor
@@ -58,6 +61,19 @@ func (s *Server) AddExpressionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		http.Error(w, "Missing or invalid Authorization header", http.StatusUnauthorized)
+		return
+	}
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
+	owner, err := AuthInteractor.CheckToken(token)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
 	var req ExpressionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusUnprocessableEntity)
@@ -70,7 +86,7 @@ func (s *Server) AddExpressionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := s.Interactor.AddExpression(tokens)
+	id := s.Interactor.AddExpression(owner, tokens)
 
 	resp := ExpressionResponse{ID: id}
 	w.WriteHeader(http.StatusCreated)
@@ -80,11 +96,33 @@ func (s *Server) AddExpressionHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ListExpressionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	expressions := s.Interactor.ListExpressions()
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		http.Error(w, "Missing or invalid Authorization header", http.StatusUnauthorized)
+		return
+	}
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
+	owner, err := AuthInteractor.CheckToken(token)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	expressions, err := s.Interactor.ListExpressions(owner)
+	if err != nil {
+		http.Error(w, "Failed to fetch expressions", http.StatusInternalServerError)
+		return
+	}
+
 	resp := ExpressionsListResponse{Expressions: make([]ExpressionVerboseResponse, 0)}
 	for _, expr := range expressions {
 		var status string
-
 		if expr.Status == orchestrator.Accepted {
 			status = "accepted"
 		} else {
