@@ -16,10 +16,11 @@ import (
 type GRPCPoller struct {
 	client proto.OrchestratorServiceClient
 	conn   *grpc.ClientConn
+	stream proto.OrchestratorService_GetTasksClient
 }
 
 func NewGRPCPoller(host, port string) (*GRPCPoller, error) {
-	conn, err := grpc.NewClient(
+	conn, err := grpc.Dial(
 		fmt.Sprintf("%s:%s", host, port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -27,9 +28,17 @@ func NewGRPCPoller(host, port string) (*GRPCPoller, error) {
 		return nil, err
 	}
 
+	client := proto.NewOrchestratorServiceClient(conn)
+
+	stream, err := client.GetTasks(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
 	return &GRPCPoller{
-		client: proto.NewOrchestratorServiceClient(conn),
+		client: client,
 		conn:   conn,
+		stream: stream,
 	}, nil
 }
 
@@ -38,24 +47,19 @@ func (p *GRPCPoller) Close() error {
 }
 
 func (p *GRPCPoller) GetNextTask(ctx context.Context) *agent.Task {
-	stream, err := p.client.GetTasks(ctx)
-	if err != nil {
-		return nil
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		default:
-			task, err := stream.Recv()
+			task, err := p.stream.Recv()
 			if err != nil {
 				return nil
 			}
 
 			id, err := uuid.Parse(task.Id)
 			if err != nil {
-				continue
+				return nil
 			}
 
 			return &agent.Task{
@@ -70,13 +74,12 @@ func (p *GRPCPoller) GetNextTask(ctx context.Context) *agent.Task {
 }
 
 func (p *GRPCPoller) SolveTask(id uuid.UUID, result calculator.Token) error {
-	stream, err := p.client.GetTasks(context.Background())
+	resultFloat, err := strconv.ParseFloat(result.Value, 64)
 	if err != nil {
 		return err
 	}
 
-	resultFloat, _ := strconv.ParseFloat(result.Value, 64)
-	return stream.Send(&proto.TaskResult{
+	return p.stream.Send(&proto.TaskResult{
 		Id:     id.String(),
 		Result: float32(resultFloat),
 	})
