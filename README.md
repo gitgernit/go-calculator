@@ -8,7 +8,7 @@ Project for the Yandex.Lyceum Go programming course.
 ## Running
 2 options are present, stick to the one that fits you more:
 
-1. Run directly through go: `go run cmd/[orchestrator,agent]/main.go`
+1. Run directly through go: `go run cmd/[orchestrator,agent]/**/main.go`
 2. Use docker with compose plugin: `docker compose --env-file=./configs/.env up --build`
 
 Docker compose will expect you to have some environment variables, 
@@ -48,6 +48,7 @@ the expression will still take 4 seconds to be fully solved because of RPN limit
 ```
 ORCHESTRATOR_HOST - self-explanatory
 ORCHESTARTOR_PORT - self-explanatory
+ORCHESTARTOR_GRPC_PORT - self-explanatory
 
 TIME_ADDITION_MS - "+" operator time complexity
 TIME_SUBTRACTION_MS - "-" operator time complexity
