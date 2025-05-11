@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"google.golang.org/grpc"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -8,6 +11,7 @@ import (
 	appconfig "github.com/gitgernit/go-calculator/internal/config"
 	"github.com/gitgernit/go-calculator/internal/domain/orchestrator"
 	"github.com/gitgernit/go-calculator/internal/infra/gorm"
+	grpcorchestrator "github.com/gitgernit/go-calculator/internal/transport/grpc/orchestrator"
 	httporchestrator "github.com/gitgernit/go-calculator/internal/transport/http/orchestrator"
 )
 
@@ -37,6 +41,18 @@ func main() {
 
 	go func() {
 		defer wg.Done()
+
+		listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.OrchestratorHost, config.OrchestratorGRPCPort))
+		if err != nil {
+			panic(fmt.Sprintf("failed to listen: %v", err))
+		}
+
+		grpcServer := grpc.NewServer()
+		grpcorchestrator.RegisterService(grpcServer, interactor)
+
+		if err := grpcServer.Serve(listener); err != nil {
+			panic(fmt.Sprintf("failed to serve: %v", err))
+		}
 	}()
 
 	wg.Wait()
