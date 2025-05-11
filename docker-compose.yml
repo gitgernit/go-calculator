@@ -9,6 +9,8 @@ services:
       ORCHESTRATOR_HOST: 0.0.0.0
     ports:
       - "${ORCHESTRATOR_PORT}:${ORCHESTRATOR_PORT}"
+      - "${ORCHESTRATOR_GRPC_PORT}:${ORCHESTRATOR_GRPC_PORT}"
+
   agent:
     build:
       dockerfile: Dockerfile-agent
