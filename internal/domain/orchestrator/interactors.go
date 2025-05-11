@@ -24,9 +24,47 @@ type Interactor struct {
 }
 
 func NewOrchestratorInteractor() *Interactor {
-	return &Interactor{
+	interactor := &Interactor{
 		TaskQueue: make([]*Task, 0),
 	}
+
+	if err := interactor.loadPendingExpressions(); err != nil {
+		panic(fmt.Sprintf("failed to load pending expressions: %v", err))
+	}
+
+	return interactor
+}
+
+func (i *Interactor) loadPendingExpressions() error {
+	var expressions []db.Expression
+	err := db.Db.Where("status != ?", db.Done).Find(&expressions).Error
+	if err != nil {
+		return err
+	}
+
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+
+	for _, dbExpr := range expressions {
+		tokens := toTokenSlice(dbExpr.Tokens)
+		expr := Expression{
+			Id:     dbExpr.ID,
+			Owner:  dbExpr.Owner,
+			Status: Status(dbExpr.Status),
+			Tokens: tokens,
+			Result: dbExpr.Result,
+		}
+
+		task := &Task{
+			Expression: expr,
+			Blocked:    false,
+			RPN:        CalculatorInteractor.TokenizedInfixToPolish(tokens),
+		}
+
+		i.TaskQueue = append(i.TaskQueue, task)
+	}
+
+	return nil
 }
 
 func (i *Interactor) AddExpression(owner string, tokens []calculator.Token) uuid.UUID {
