@@ -11,6 +11,8 @@ Project for the Yandex.Lyceum Go programming course.
 1. Run directly through go: `go run cmd/[orchestrator,agent]/**/main.go`
 2. Use docker with compose plugin: `docker compose --env-file=./configs/.env up --build`
 
+N.B.! ./configs/.env file must be present in order for the server to not crash
+
 Docker compose will expect you to have some environment variables, 
 hence, you'll need to create an .env file or export them manually. 
 Feel free to create the .env file based on ./configs/.env.template
